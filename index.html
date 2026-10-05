@@ -1467,7 +1467,7 @@ async function openStream() {
   try { await v.play(); } catch (e) { }
 }
 function camErr(e) {
-  if (location.protocol === 'file:') return 'Файл тікелей ашылған (file://). Телефон камерасы тек <b>https</b> сайтта жұмыс істейді:<br><b>rduankanov.github.io/qazaq-sign</b>';
+  if (location.protocol === 'file:') return 'Файл тікелей ашылған (file://). Телефон камерасы тек <b>https</b> сайтта жұмыс істейді: жобаның <b>https://…github.io</b> сілтемесін ашыңыз';
   const n = e && e.name;
   if (n === 'NotAllowedError' || n === 'SecurityError') return 'Камераға рұқсат берілмеді. Браузердің мекенжай жолындағы 🔒 белгісін басып, камераға рұқсат беріңіз.';
   if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'Камера табылмады.';
@@ -2352,7 +2352,7 @@ function bindEvents() {
   renderSent(); setTab(1);
   let seen = null; try { seen = localStorage.getItem('qs-help-seen'); } catch (e) { }
   if (!seen) showHelp();
-  if (location.protocol === 'file:') camMsg('⚠ Файл тікелей ашылған (file://). Камера тек https сайтта жұмыс істейді:<br><b>rduankanov.github.io/qazaq-sign</b><br><br>«Мәтін→Ым» мен «Зерттеу» бөлімдері камерасыз да жұмыс істейді.', 1);
+  if (location.protocol === 'file:') camMsg('⚠ Файл тікелей ашылған (file://). Камера тек https сайтта жұмыс істейді: жобаның <b>https://…github.io</b> сілтемесін ашыңыз<br><br>«Мәтін→Ым» мен «Зерттеу» бөлімдері камерасыз да жұмыс істейді.', 1);
   window.__qs_ready = true;
 })();
 
