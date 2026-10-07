@@ -40,6 +40,7 @@ button{font-family:inherit}
 .bsub{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;text-align:center}
 
 /* TABS */
+.mode-sw.demo{grid-template-columns:repeat(2,1fr)}
 .mode-sw{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;background:var(--card);border-radius:14px;border:1px solid rgba(0,229,255,0.08)}
 .mBtn{padding:8px 2px;border-radius:10px;border:none;background:transparent;font-size:9.5px;color:var(--muted);cursor:pointer;transition:all .25s;text-align:center;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2}
 .mBtn span{font-size:16px}
@@ -278,10 +279,10 @@ svg text{font-family:'JetBrains Mono',monospace}
 
   <div class="hdr">
     <div class="brand-row"><div class="bicon">🤟</div><div class="btitle">AI-Qazaq Sign</div><button class="help-btn" onclick="showHelp()" title="Қалай қолдану">?</button></div>
-    <div class="bsub">Ым-ишараны тану жүйесі · v1.4 · прототип</div>
+    <div class="bsub">Ым-ишараны тану жүйесі · v1.5 · прототип</div>
   </div>
 
-  <div class="mode-sw">
+  <div class="mode-sw" id="modeSw">
     <button class="mBtn on" id="tb1" onclick="setTab(1)"><span>📷</span>Тану</button>
     <button class="mBtn" id="tb2" onclick="setTab(2)"><span>🎓</span>Үйрету</button>
     <button class="mBtn" id="tb3" onclick="setTab(3)"><span>🧪</span>Зерттеу</button>
@@ -363,6 +364,7 @@ svg text{font-family:'JetBrains Mono',monospace}
         <label class="fld">Ең аз сенімділік <span class="val" id="vMinConf"></span><input type="range" id="setMinConf" min="0.2" max="0.95" step="0.05" oninput="setSetting('minConf',+this.value)"></label>
         <label class="fld">Қабылдамау шегі × <span class="val" id="vRej"></span><input type="range" id="setRej" min="0.5" max="2.5" step="0.1" oninput="setSetting('rejectMul',+this.value)"></label>
       </div>
+      <label style="display:flex;align-items:center;gap:10px;margin:12px 0 8px;font-size:11px;line-height:1.4;color:var(--text);cursor:pointer"><input type="checkbox" id="setResearch" style="width:18px;height:18px;flex:none" onchange="setSetting('demo',!this.checked)"> 🔬 Зерттеуші режимі: «Үйрету» мен «Зерттеу» бөлімдерін көрсету</label>
       <div class="note">«Қабылдамау шегі» кіші болса, жүйе қатаңырақ болады: сенімсіз ымды «белгісіз» деп тастайды. Үлкен болса, бәрін бір сөзге жатқызуға тырысады.</div>
     </details>
   </div>
@@ -1323,7 +1325,7 @@ const EYES = [33, 160, 158, 133, 153, 144, 362, 385, 387, 263, 373, 380];
 // ═══════════════════════════════════════════════════════════
 // КҮЙ (STATE)
 // ═══════════════════════════════════════════════════════════
-const DEF_SET = { dominant: 'right', minConf: 0.5, rejectMul: 1.0, k: 3, signer: 'Қ1', light: 'жақсы', dist: 'орта', gw: { static: {}, dynamic: {} } };
+const DEF_SET = { dominant: 'right', minConf: 0.5, rejectMul: 1.0, k: 3, signer: 'Қ1', light: 'жақсы', dist: 'орта', demo: true, gw: { static: {}, dynamic: {} } };
 const S = {
   tab: 1, recSub: 'dynamic', trainSub: 'dynamic', evalKind: 'dynamic', sel: null, burst: null,
   ds: null, models: { static: null, dynamic: null, dletter: null }, settings: null, testLog: [], lastEval: null, lastAb: null,
@@ -1373,6 +1375,15 @@ function syncSettingsUI() {
   $('setMinConf').value = st.minConf; $('vMinConf').textContent = pct(st.minConf);
   $('setRej').value = st.rejectMul; $('vRej').textContent = st.rejectMul.toFixed(1);
   $('setSigner').value = st.signer; $('setLight').value = st.light; $('setDist').value = st.dist;
+  applyDemo();
+}
+// Көрсетілім режимі: «Үйрету» мен «Зерттеу» жасырылады (өшірілмейді), деректер мен тану өзгермейді
+function applyDemo() {
+  const d = !!S.settings.demo;
+  $('tb2').classList.toggle('hidden', d); $('tb3').classList.toggle('hidden', d);
+  $('modeSw').classList.toggle('demo', d);
+  $('setResearch').checked = !d;
+  if (d && (S.tab === 2 || S.tab === 3)) setTab(1);
 }
 
 // ── Кластар (сөздер мен әріптер) ──
