@@ -279,7 +279,7 @@ svg text{font-family:'JetBrains Mono',monospace}
 
   <div class="hdr">
     <div class="brand-row"><div class="bicon">🤟</div><div class="btitle">AI-Qazaq Sign</div><button class="help-btn" onclick="showHelp()" title="Қалай қолдану">?</button></div>
-    <div class="bsub">Ым-ишараны тану жүйесі · v1.5 · прототип</div>
+    <div class="bsub">Ым-ишараны тану жүйесі · v1.5.1 · прототип</div>
   </div>
 
   <div class="mode-sw" id="modeSw">
@@ -1573,7 +1573,7 @@ function speedNow() {
   const dt = (b.t - a.t) / 1000; return dt > 0 ? Math.hypot(b.u - a.u, b.v - a.v) / dt : 0;
 }
 function resetLive() {
-  const L = S.live; L.sbuf = []; L.armed = true; L.lastStatic = null; L.seg = null; L.pre = []; L.onCnt = 0; L.hist = []; L.blockStatic = false; L.lastStaticT = 0;
+  const L = S.live; L.sbuf = []; L.armed = true; L.lastStatic = null; L.seg = null; L.pre = []; L.onCnt = 0; L.hist = []; L.blockStatic = false; L.lastStaticT = 0; L.unkArmed = true;
 }
 
 // ── Суретке салу ──
@@ -1664,12 +1664,16 @@ function finishDynLetter(M, frames, t0) {
 // Дактиль: әр кадрды тану → соңғы 10 кадрдың 7-і бірдей болса, әріп бекітіледі
 function staticStep(M, frame, ts) {
   const L = S.live;
-  if (!frame) { L.sbuf = []; L.armed = true; return; }
+  if (!frame) { L.sbuf = []; L.armed = true; L.unkArmed = true; return; }
   const sp = speedNow();
   const r = Engine.classify(M, frame, { rejectMul: S.settings.rejectMul });
   showCands(r);
   L.sbuf.push({ cls: r.unknown ? null : r.best, p: r.p }); if (L.sbuf.length > 10) L.sbuf.shift();
-  if (sp > VON) L.armed = true;
+  if (sp > VON) { L.armed = true; L.unkArmed = true; }
+  // Қол тоқтап тұр, бірақ пішіні үйретілген әріптердің ешқайсысына ұқсамайды → «белгісіз» (сөйлемге қосылмайды)
+  if (L.sbuf.length >= 8 && sp < 0.8 && L.unkArmed !== false && L.sbuf.filter(b => !b.cls).length >= 7) {
+    setResult('❓ Белгісіз әріп' + (r.best ? ' (жақыны: ' + clsLabel(r.best) + ')' : ''), 'unk'); L.unkArmed = false;
+  }
   const cnt = {}; for (const b of L.sbuf) if (b.cls) cnt[b.cls] = (cnt[b.cls] || 0) + 1;
   const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
   if (top && L.sbuf.length >= 8 && cnt[top] >= 7 && sp < 0.8) {

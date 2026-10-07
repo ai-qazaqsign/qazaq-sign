@@ -1,7 +1,7 @@
 /* AI-Qazaq Sign · Service Worker
    • Өз файлдары (index.html, dataset.json): алдымен желіден (жаңа нұсқа бірден келеді), желі болмаса — кэштен.
    • MediaPipe кітапханасы, модельдер, қаріптер: алдымен кэштен (бір рет жүктелген соң интернетсіз жұмыс істейді). */
-const VER = 'qs-v1.5';
+const VER = 'qs-v1.5.1';
 const ASSETS = 'qs-assets';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './privacy.html'];
 
