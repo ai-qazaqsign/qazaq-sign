@@ -279,7 +279,7 @@ svg text{font-family:'JetBrains Mono',monospace}
 
   <div class="hdr">
     <div class="brand-row"><div class="bicon">🤟</div><div class="btitle">AI-Qazaq Sign</div><button class="help-btn" onclick="showHelp()" title="Қалай қолдану">?</button></div>
-    <div class="bsub">Ым-ишараны тану жүйесі · v1.5.1 · прототип</div>
+    <div class="bsub">Ым-ишараны тану жүйесі · v1.6 · прототип</div>
   </div>
 
   <div class="mode-sw" id="modeSw">
@@ -401,13 +401,14 @@ svg text{font-family:'JetBrains Mono',monospace}
       <div class="kpis" id="dsKpis"></div>
       <div class="note" id="dsSafe"></div>
       <div class="row">
-        <button class="btn acc" onclick="exportDataset()">⬇ JSON жүктеп алу</button>
+        <button class="btn acc" onclick="publishDataset()">🌐 Сайтқа жариялау</button>
+        <button class="btn" onclick="exportDataset()">⬇ JSON жүктеп алу</button>
         <button class="btn" onclick="document.getElementById('impFile').click()">⬆ JSON қосу</button>
         <button class="btn" onclick="fetchSiteDataset(true)">🌐 Сайттан қосу</button>
         <button class="btn del" onclick="clearDataset()">🗑 Барлығын өшіру</button>
         <input type="file" id="impFile" accept=".json,application/json" class="hidden" onchange="importDataset(this)">
       </div>
-      <div class="note">Деректер тек осы телефонда сақталады. Жоғалмас үшін JSON-ды жүктеп алып, GitHub-қа <b>dataset.json</b> деген атпен <b>index.html</b>-дің жанына салыңыз. Сонда сайт кез келген телефонда дайын модельмен ашылады.</div>
+      <div class="note">Деректер осы құрылғыда сақталады. <b>«🌐 Сайтқа жариялау»</b> басып, жүктелген <b>dataset.json</b>-ды ашылған GitHub бетіне салсаңыз, сайтты ашқан барлық құрылғы (өз жазбасы жоқ) соңғы деректерді өзі жүктейді.</div>
     </div>
   </div>
 
@@ -1410,6 +1411,9 @@ const classesOf = sub => S.ds.classes.filter(c => Engine.groupOf(c) === (sub ===
 function countBy() { const n = {}; for (const s of S.ds.samples) n[s.cls] = (n[s.cls] || 0) + 1; return n; }
 
 // ── Модель ──
+function setSrc(v) { try { localStorage.setItem('qs-ds-src', v); } catch (e) { } }
+function getSrc() { try { return localStorage.getItem('qs-ds-src'); } catch (e) { return null; } }
+const dsSig = d => d && d.samples ? d.samples.length + '|' + (d.samples.length ? d.samples[d.samples.length - 1].id : '') : '';
 function markDirty() { S.models = { static: null, dynamic: null, dletter: null }; }
 const MODEL_SPEC = { static: ['static', 'letter', 'static'], dynamic: ['dynamic', 'word', 'dynamic'], dletter: ['dynamic', 'letter', 'dynamic'] };
 function getModel(kind) {
@@ -1915,12 +1919,12 @@ function recordTakes() {
 }
 function addSample(cls, kind, frames) {
   S.ds.samples.push({ id: uid(), cls, kind, signer: S.settings.signer || 'Қатысушы', created: new Date().toISOString(), cond: { light: S.settings.light, dist: S.settings.dist, cam: S.cam.facing }, frames });
-  markDirty(); saveDS(); renderTrain();
+  setSrc('local'); markDirty(); saveDS(); renderTrain();
 }
 function toggleMoving() {
   const c = S.ds.classes.find(x => x.id === S.sel); if (!c || !/^L:/.test(c.id)) return;
   if (S.ds.samples.some(x => x.cls === c.id)) { toast('Алдымен бұл әріптің жазбаларын өшіріңіз', 1); return; }
-  c.kind = c.kind === 'dynamic' ? 'static' : 'dynamic'; c.userSet = true; markDirty(); saveDS(); renderTrain();
+  c.kind = c.kind === 'dynamic' ? 'static' : 'dynamic'; c.userSet = true; setSrc('local'); markDirty(); saveDS(); renderTrain();
 }
 function addClass() {
   const label = (prompt('Жаңа сөз (қазақша):') || '').trim();
@@ -1936,6 +1940,14 @@ function exportDataset() {
   S.lastRemind = 0; renderDsKpis();
   toast('✓ JSON жүктелді. Оны GitHub-қа dataset.json атымен салыңыз');
 }
+function publishDataset() {
+  if (!S.ds.samples.length) { toast('Деректер жоқ', 1); return; }
+  download('dataset.json', JSON.stringify(S.ds));
+  try { localStorage.setItem('qs-lastExport', new Date().toISOString()); } catch (e) { }
+  S.lastRemind = 0; renderDsKpis();
+  try { window.open('https://github.com/ai-qazaqsign/qazaq-sign/upload/main', '_blank'); } catch (e) { }
+  toast('✓ dataset.json жүктелді. Ашылған GitHub бетіне сүйреп салып, «Commit changes» басыңыз — 1–2 минуттан кейін барлық құрылғыда жаңарады');
+}
 function importDataset(inp) {
   const f = inp.files && inp.files[0]; if (!f) return;
   const r = new FileReader();
@@ -1943,7 +1955,7 @@ function importDataset(inp) {
     try {
       const o = JSON.parse(r.result);
       if (!Engine.validDataset(o)) throw new Error('формат дұрыс емес');
-      const m = Engine.mergeDatasets(S.ds, o); S.ds = ensureDefaults(m.ds); markDirty(); saveDS(); renderTrain();
+      const m = Engine.mergeDatasets(S.ds, o); S.ds = ensureDefaults(m.ds); setSrc('local'); markDirty(); saveDS(); renderTrain();
       toast('✓ Қосылды: ' + m.addS + ' жазба, ' + m.addC + ' жаңа сөз');
     } catch (e) { toast('✗ JSON оқылмады: ' + e.message, 1); }
     inp.value = '';
@@ -1955,7 +1967,7 @@ async function fetchSiteDataset(merge) {
     const r = await fetch('dataset.json', { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
     const o = await r.json(); if (!Engine.validDataset(o)) throw new Error('формат');
     if (!merge) return o;
-    const m = Engine.mergeDatasets(S.ds, o); S.ds = ensureDefaults(m.ds); markDirty(); saveDS(); renderTrain();
+    const m = Engine.mergeDatasets(S.ds, o); S.ds = ensureDefaults(m.ds); setSrc('local'); markDirty(); saveDS(); renderTrain();
     toast('✓ Сайттан қосылды: ' + m.addS + ' жазба'); return o;
   } catch (e) { if (merge) toast('Сайтта dataset.json табылмады', 1); return null; }
 }
@@ -1963,7 +1975,7 @@ function clearDataset() {
   if (!S.ds.samples.length) return;
   if (!confirm('Барлық ' + S.ds.samples.length + ' жазба өшеді. Алдымен JSON-ды жүктеп алдыңыз ба?')) return;
   if (!confirm('Шынымен өшіреміз бе? Бұл әрекетті қайтару мүмкін емес.')) return;
-  S.ds = ensureDefaults(Engine.newDataset()); S.sel = null; markDirty(); saveDS(); renderTrain(); toast('Деректер өшірілді');
+  S.ds = ensureDefaults(Engine.newDataset()); S.sel = null; setSrc('local'); markDirty(); saveDS(); renderTrain(); toast('Деректер өшірілді');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2336,7 +2348,7 @@ function bindEvents() {
   });
   $('takeList').addEventListener('click', e => {
     const d = e.target.closest('[data-del]');
-    if (d) { if (!confirm('Бұл жазбаны өшіреміз бе?')) return; const s = S.ds.samples.find(x => x.id === d.dataset.del); S.ds.samples = S.ds.samples.filter(x => x.id !== d.dataset.del); if (s) markDirty(); saveDS(); renderTrain(); return; }
+    if (d) { if (!confirm('Бұл жазбаны өшіреміз бе?')) return; const s = S.ds.samples.find(x => x.id === d.dataset.del); S.ds.samples = S.ds.samples.filter(x => x.id !== d.dataset.del); if (s) setSrc('local'); markDirty(); saveDS(); renderTrain(); return; }
     if (e.target.closest('[data-mv]')) { toggleMoving(); return; }
     if (e.target.closest('[data-rmcls]')) { S.ds.classes = S.ds.classes.filter(c => c.id !== S.sel); S.sel = null; saveDS(); renderTrain(); }
   });
@@ -2355,9 +2367,11 @@ function bindEvents() {
   S.settings = loadSettings(); syncSettingsUI(); bindEvents();
   await DB.open();
   let ds = await DB.get('dataset');
-  if (!ds || !Engine.validDataset(ds) || !ds.samples.length) {
+  const emptyLocal = !ds || !Engine.validDataset(ds) || !ds.samples.length;
+  // Жергілікті жазба жоқ немесе деректер сайттан келген болса — сайттағы соңғы нұсқамен синхрондау
+  if (emptyLocal || getSrc() === 'site') {
     const site = await fetchSiteDataset(false);
-    if (site) { ds = site; setTimeout(() => toast('🌐 Сайттағы dataset.json жүктелді: ' + site.samples.length + ' жазба'), 600); }
+    if (site && (emptyLocal || dsSig(site) !== dsSig(ds))) { ds = site; setSrc('site'); setTimeout(() => toast('🌐 Сайттағы соңғы деректер жүктелді: ' + site.samples.length + ' жазба'), 600); }
   }
   S.ds = ensureDefaults(ds && Engine.validDataset(ds) ? ds : Engine.newDataset());
   if (ds) saveDS();
